@@ -7,11 +7,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.text.TextUtils
 import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.Signature
-import java.security.interfaces.RSAPublicKey
+import java.security.*
 import java.util.*
 import javax.crypto.Cipher
 import javax.security.auth.x500.X500Principal
@@ -105,8 +101,7 @@ class KeyStoreRSA private constructor() {
 
     fun encrypt(data: ByteArray, alias: String = defaultAlias): ByteArray? {
         return try {
-            val privateKeyEntry = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
-            val publicKey = privateKeyEntry.certificate.publicKey as RSAPublicKey
+            val publicKey = getPublicKey(alias)
             val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
             cipher.doFinal(data)
@@ -118,8 +113,7 @@ class KeyStoreRSA private constructor() {
 
     fun decrypt(data: ByteArray, alias: String = defaultAlias): ByteArray? {
         return try {
-            val privateKeyEntry = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
-            val privateKey = privateKeyEntry.privateKey
+            val privateKey = getPrivateKey(alias)
             val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             cipher.doFinal(data)
@@ -131,9 +125,8 @@ class KeyStoreRSA private constructor() {
 
     fun sign(data: ByteArray, alias: String = defaultAlias): ByteArray? {
         return try {
-            val privateKeyEntry = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
             val signature = Signature.getInstance("SHA1withRSA")
-            signature.initSign(privateKeyEntry.privateKey)
+            signature.initSign(getPrivateKey(alias))
             signature.update(data)
             signature.sign()
         } catch (e: Exception) {
@@ -144,14 +137,31 @@ class KeyStoreRSA private constructor() {
 
     fun verify(data: ByteArray, signatureData: ByteArray, alias: String = defaultAlias): Boolean {
         return try {
-            val privateKeyEntry = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
             val signature = Signature.getInstance("SHA1withRSA")
-            signature.initVerify(privateKeyEntry.certificate)
+            signature.initVerify(getPublicKey(alias))
             signature.update(data)
             signature.verify(signatureData)
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    private fun getPublicKey(alias: String): PublicKey? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            keyStore.getCertificate(alias).publicKey
+        } else {
+            val asymmetricKey = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
+            asymmetricKey.certificate.publicKey
+        }
+    }
+
+    private fun getPrivateKey(alias: String): PrivateKey {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            keyStore.getKey(alias, null) as PrivateKey
+        } else {
+            val asymmetricKey = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
+            asymmetricKey.privateKey
         }
     }
 }
