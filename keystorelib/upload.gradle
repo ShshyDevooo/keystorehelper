@@ -1,0 +1,106 @@
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+group = "com.github.shshy"
+version = "1.0.0"
+
+def siteUrl =  'https://github.com/ShshyDevooo/keystorehelper'
+def gitUrl = 'https://github.com/ShshyDevooo/keystorehelper.git'
+
+install {
+    repositories.mavenInstaller {
+        // 生成pom.xml和参数
+        pom {
+            project {
+                packaging 'aar'
+                // 项目描述，复制我的话，这里需要修改。
+                name 'keystorehelper'// 可选，项目名称。
+                url siteUrl // 项目主页，这里是引用上面定义好。
+
+                // 软件开源协议，现在一般都是Apache License2.0吧，复制我的，这里不需要修改。
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                //填写开发者基本信息，复制我的，这里需要修改。
+                developers {
+                    developer {
+                        id 'shshy' // 开发者的id。
+                        name 'shshy' // 开发者名字。
+                        email 'shyang.shi@gmail.com' // 开发者邮箱。
+                    }
+                }
+
+                // SCM，复制我的，这里不需要修改。
+                scm {
+                    connection gitUrl // Git仓库地址。
+                    developerConnection gitUrl // Git仓库地址。
+                    url siteUrl // 项目主页。
+                }
+
+//                dependencies{
+//                    dependency{
+//                        groupId group
+//                        version version
+//                        artifactId "mavenlibrary"
+//                        scope "compile"
+//                    }
+//                }
+            }
+        }
+    }
+}
+
+// 生成jar包的task，不需要修改。
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+// 生成jarDoc的task，不需要修改。
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    // destinationDir = file("../javadoc/")
+    failOnError false // 忽略注释语法错误，如果用jdk1.8你的注释写的不规范就编译不过。
+}
+// 生成javaDoc的jar，不需要修改。
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def bintray_user = properties.getProperty("bintray.user")
+def bintray_key = properties.getProperty("bintray.apikey")
+def bintray_gpg_pwd = properties.getProperty("bintray.gpg.password")
+
+bintray {
+    user = bintray_user
+    key = bintray_key
+    configurations = ['archives']
+
+    pkg {
+        repo = "androidlib"
+        name = "keystorehelper"
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ["Apache-2.0"]
+        publish = true
+//        version{
+//            name = '1.0.0'
+//            vcsTag = '1.0.0'
+//            gpg{
+//                sign = true
+//                passphrase = bintray_gpg_pwd
+//            }
+//        }
+    }
+}
