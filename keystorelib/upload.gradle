@@ -2,7 +2,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 group = "com.github.shshy"
-version = "1.0.0"
+version = "1.0.1"
 
 def siteUrl =  'https://github.com/ShshyDevooo/keystorehelper'
 def gitUrl = 'https://github.com/ShshyDevooo/keystorehelper.git'
